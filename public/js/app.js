@@ -902,8 +902,8 @@
                             </div>
                             <div id="customer-unknown-form" class="unknown-customer-form" style="display:none">
                                 <div class="form-grid">
-                                    ${field('Nome *','unk_nome','','text','required')}
-                                    ${field('Cognome *','unk_cognome','','text','required')}
+                                    ${field('Nome *','unk_nome','','text')}
+                                    ${field('Cognome *','unk_cognome','','text')}
                                     ${field('Telefono','unk_telefono','','tel')}
                                     ${field('N. patente','unk_patente_numero','')}
                                 </div>
@@ -1040,6 +1040,10 @@
                 try {
                     const data = formDataToObject(e.currentTarget);
                     delete data.customer_search;
+                    delete data.unk_nome;
+                    delete data.unk_cognome;
+                    delete data.unk_telefono;
+                    delete data.unk_patente_numero;
                     for (const [k, v] of Object.entries(preset || {})) {
                         if (v !== undefined && v !== null && (data[k] === undefined || data[k] === '' || data[k] === null)) data[k] = v;
                     }
@@ -1054,9 +1058,12 @@
                     data.kasko_inclusa = document.getElementById('kasko_inclusa')?.checked ? 1 : 0;
                     id ? await api.put(`/contracts/${id}`, data) : await api.post('/contracts', data);
                     closeModal(); showToast(id ? 'Prenotazione / noleggio aggiornato' : 'Prenotazione creata e vettura bloccata'); await renderRentals();
-                } catch (_) {}
+                } catch (err) {
+                    console.error(err);
+                    if (!(err && err._toasted)) showToast(err?.message || 'Errore durante il salvataggio', 'error');
+                }
             });
-        } catch (_) {}
+        } catch (err) { console.error(err); if (!(err && err._toasted)) showToast(err?.message || 'Errore durante l\'apertura del form', 'error'); }
     };
 
     // ---------- Auto sostitutiva ----------
@@ -1341,7 +1348,10 @@
                 closeModal();
                 showToast(importo > 0 ? 'Uscita confermata e pagamento registrato' : 'Uscita confermata');
                 await refreshCurrentPage();
-            } catch (_) {}
+            } catch (err) {
+                console.error(err);
+                if (!(err && err._toasted)) showToast(err?.message || 'Errore durante la conferma dell\'uscita', 'error');
+            }
         });
     };
 

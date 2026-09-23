@@ -51,6 +51,7 @@
             console.error('API Error:', error);
             if (window.showToast) {
                 window.showToast(error.message || 'Si è verificato un errore di rete', 'error');
+                error._toasted = true;
             }
             throw error;
         } finally {
