@@ -1,0 +1,51 @@
+GESTIONALE AUTONOLEGGIO - AVVIO FACILE
+=======================================
+
+1) Estrai TUTTA la cartella ZIP in una cartella normale di Windows.
+2) Apri la cartella estratta.
+3) Fai doppio clic su "start.bat".
+4) Lascia aperta la finestra nera che compare.
+5) Apri Chrome / Edge e vai su:
+
+   http://localhost:3000
+
+Se Node.js non e' installato, start.bat te lo segnala.
+
+COSA PUOI FARE ORA
+------------------
+- Inserire, modificare e consultare i veicoli.
+- Inserire, modificare e consultare i clienti.
+- Creare prenotazioni e noleggi con data e ora.
+- Consultare il calendario grafico delle vetture occupate.
+- Verificare quali vetture sono libere in un intervallo preciso.
+- Bloccare automaticamente le prenotazioni sovrapposte.
+- Fare il check-in/rientro del veicolo.
+- Generare il PDF del contratto usando il modello ufficiale compilabile.
+- Usare prezzi giornalieri e Kasko gia' IVA compresa.
+- Registrare manutenzioni.
+- Registrare pagamenti e spese.
+- Modificare i dati aziendali.
+- Scaricare il backup del database.
+- Esportare le finanze in CSV.
+- Caricare allegati su clienti e veicoli.
+- Esportare gli allegati in ZIP.
+
+DATI IMPORTANTI
+---------------
+Database: database\gestionale.db
+Allegati: uploads\
+
+Per un backup completo conserva sia il file database sia la cartella uploads.
+
+NOTA RETE LOCALE
+----------------
+Il programma puo' essere aperto anche dagli altri PC della stessa rete usando
+l'indirizzo mostrato da start.bat. In questa versione non e' ancora presente
+una schermata di accesso con password: usa l'accesso LAN solo su una rete fidata.
+
+CONTRATTO PDF
+-------------
+Il numero contratto viene assegnato quando premi 'Genera contratto PDF'.
+La prenotazione resta prenotazione fino a quando la imposti tu su 'In corso'.
+Per la generazione del PDF serve una connessione Internet, perche' la libreria
+PDF viene caricata solo al momento della stampa.
