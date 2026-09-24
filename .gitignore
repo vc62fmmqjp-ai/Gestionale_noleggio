@@ -2,3 +2,7 @@ node_modules/
 uploads/ 
 contratti/ 
 database/*.db 
+gestionale_noleggio.zip
+database/backups-temp/
+database/gestionale.db-shm
+database/gestionale.db-wal

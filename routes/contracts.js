@@ -3,6 +3,18 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 const { db } = require('../database/db');
+const { pickAllowedFields, buildSafeUpdate } = require('../utils/safe-update');
+
+const CONTRACT_WRITE_FIELDS = [
+    'numero_contratto','customer_id','vehicle_id','filiale_partenza','filiale_rientro','data_partenza','ora_partenza',
+    'data_rientro_previsto','ora_rientro_previsto','data_arrivo','ora_arrivo','data_scadenza_pagamento','km_partenza','km_arrivo',
+    'carburante_partenza','carburante_arrivo','giorni_tariffa','importo_giorno','giorni_max','extra_giorno','km_inclusi','extra_km',
+    'ritardo_consentito','carburante_costo','franchigia_rca_noleggiatore','franchigia_rca_cliente','franchigia_kasko_noleggiatore',
+    'franchigia_kasko_cliente','franchigia_furto_noleggiatore','franchigia_furto_cliente','kasko_inclusa','kasko_prezzo',
+    'secondo_conducente_nome','secondo_conducente_doc_tipo','secondo_conducente_doc_numero','secondo_conducente_doc_categoria',
+    'secondo_conducente_doc_rilasciato_da','secondo_conducente_doc_rilasciato_il','secondo_conducente_doc_scadenza',
+    'optionals','note','stato','imponibile','iva','totale','deposito_cauzionale','dettagli_assegno','pdf_filename','tipo_impegno','prolungamento_di'
+];
 
 const contractsDir = path.join(__dirname, '..', 'contratti');
 
@@ -342,7 +354,7 @@ router.get('/availability', (req, res) => {
 // POST / - crea contratto
 router.post('/', (req, res) => {
     try {
-        const data = { ...req.body };
+        const data = pickAllowedFields(req.body, CONTRACT_WRITE_FIELDS);
         const validationError = validateContractReferences(data);
         if (validationError) return res.status(400).json({ error: validationError });
         data.stato = data.stato || 'prenotazione';
@@ -396,7 +408,7 @@ router.put('/:id', (req, res) => {
         const existing = db.prepare('SELECT * FROM contracts WHERE id = ?').get(req.params.id);
         if (!existing) return res.status(404).json({ error: 'Contratto non trovato' });
 
-        const data = { ...req.body };
+        const data = pickAllowedFields(req.body, CONTRACT_WRITE_FIELDS);
         const merged = { ...existing, ...data };
         const validationError = validateContractReferences(merged);
         if (validationError) return res.status(400).json({ error: validationError });
@@ -432,8 +444,8 @@ router.put('/:id', (req, res) => {
             data.franchigia_furto_noleggiatore = franchiseData.franchigia_furto_noleggiatore;
             data.franchigia_furto_cliente = franchiseData.franchigia_furto_cliente;
         }
-        const updateFields = Object.keys(data).map(key => `${key} = ?`).join(', ');
-        if (!updateFields) return res.status(400).json({ error: 'Nessun campo' });
+        const { clause: updateFields, values: updateValues } = buildSafeUpdate(data, CONTRACT_WRITE_FIELDS);
+        if (!updateFields) return res.status(400).json({ error: 'Nessun campo valido' });
 
         const updateContract = db.transaction(() => {
             if (existing.stato === 'in_corso' && (merged.stato !== 'in_corso' || String(existing.vehicle_id) !== String(merged.vehicle_id))) {
@@ -446,7 +458,7 @@ router.put('/:id', (req, res) => {
             if (merged.stato === 'in_corso') {
                 db.prepare('UPDATE vehicles SET stato = ? WHERE id = ?').run(activeVehicleState(merged), merged.vehicle_id);
             }
-            const params = [...Object.values(data), req.params.id];
+            const params = [...updateValues, req.params.id];
             return db.prepare(`UPDATE contracts SET ${updateFields} WHERE id = ?`).run(...params);
         });
 

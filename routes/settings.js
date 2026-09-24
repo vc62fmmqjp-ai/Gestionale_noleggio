@@ -36,16 +36,21 @@ router.put('/', (req, res) => {
     }
 });
 
-// GET /backup - scarica il file database
-router.get('/backup', (req, res) => {
+// GET /backup - crea uno snapshot SQLite coerente anche mentre il gestionale e' in uso.
+router.get('/backup', async (req, res) => {
+    const backupDir = path.join(__dirname, '..', 'database', 'backups-temp');
+    const filename = `backup_gestionale_${Date.now()}.db`;
+    const backupPath = path.join(backupDir, filename);
     try {
-        const dbPath = path.join(__dirname, '..', 'database', 'gestionale.db');
-        if (!fs.existsSync(dbPath)) {
-            return res.status(404).json({ error: 'Database non trovato' });
-        }
-        res.download(dbPath, `backup_gestionale_${Date.now()}.db`);
+        fs.mkdirSync(backupDir, { recursive: true });
+        await db.backup(backupPath);
+        res.download(backupPath, filename, (err) => {
+            fs.unlink(backupPath, () => {});
+            if (err && !res.headersSent) res.status(500).json({ error: err.message });
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        fs.unlink(backupPath, () => {});
+        if (!res.headersSent) res.status(500).json({ error: err.message });
     }
 });
 

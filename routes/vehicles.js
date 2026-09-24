@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { db } = require('../database/db');
+const { buildSafeUpdate } = require('../utils/safe-update');
+
+const VEHICLE_UPDATE_FIELDS = ['targa','marca','modello','versione','alimentazione','nr_posti','portata_utile','colore','anno','km_attuali','stato','note'];
+const VEHICLE_DEADLINE_UPDATE_FIELDS = ['tipo','data_scadenza','note','completata'];
 
 // GET / - lista veicoli
 router.get('/', (req, res) => {
@@ -63,11 +67,11 @@ router.post('/', (req, res) => {
 // PUT /:id - aggiorna veicolo
 router.put('/:id', (req, res) => {
     try {
-        const updateFields = Object.keys(req.body).map(key => `${key} = ?`).join(', ');
-        if (!updateFields) return res.status(400).json({ error: 'Nessun campo da aggiornare' });
+        const { clause: updateFields, values } = buildSafeUpdate(req.body, VEHICLE_UPDATE_FIELDS);
+        if (!updateFields) return res.status(400).json({ error: 'Nessun campo valido da aggiornare' });
 
         const query = `UPDATE vehicles SET ${updateFields} WHERE id = ?`;
-        const params = [...Object.values(req.body), req.params.id];
+        const params = [...values, req.params.id];
         
         const info = db.prepare(query).run(...params);
         if (info.changes === 0) return res.status(404).json({ error: 'Veicolo non trovato' });
@@ -174,10 +178,10 @@ router.post('/:id/scadenze', (req, res) => {
 // PUT /:id/scadenze/:sid
 router.put('/:id/scadenze/:sid', (req, res) => {
     try {
-        const updateFields = Object.keys(req.body).map(key => `${key} = ?`).join(', ');
-        if (!updateFields) return res.status(400).json({ error: 'Nessun campo' });
+        const { clause: updateFields, values } = buildSafeUpdate(req.body, VEHICLE_DEADLINE_UPDATE_FIELDS);
+        if (!updateFields) return res.status(400).json({ error: 'Nessun campo valido' });
         
-        const params = [...Object.values(req.body), req.params.sid, req.params.id];
+        const params = [...values, req.params.sid, req.params.id];
         const info = db.prepare(`UPDATE vehicles_scadenze SET ${updateFields} WHERE id = ? AND vehicle_id = ?`).run(...params);
         if (info.changes === 0) return res.status(404).json({ error: 'Scadenza non trovata' });
         res.json({ message: 'Scadenza aggiornata' });

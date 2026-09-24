@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { db } = require('../database/db');
+const { buildSafeUpdate } = require('../utils/safe-update');
+
+const MAINTENANCE_UPDATE_FIELDS = ['vehicle_id','tipo','descrizione','data','data_prossima','km','km_prossimo','costo','officina','completato','note'];
 
 function maintenanceDescription(data) {
     return ['Manutenzione', data.tipo, data.descrizione].filter(Boolean).join(': ');
@@ -94,10 +97,10 @@ router.post('/', (req, res) => {
 // PUT /:id
 router.put('/:id', (req, res) => {
     try {
-        const updateFields = Object.keys(req.body).map(key => `${key} = ?`).join(', ');
-        if (!updateFields) return res.status(400).json({ error: 'Nessun campo' });
+        const { clause: updateFields, values } = buildSafeUpdate(req.body, MAINTENANCE_UPDATE_FIELDS);
+        if (!updateFields) return res.status(400).json({ error: 'Nessun campo valido' });
         
-        const params = [...Object.values(req.body), req.params.id];
+        const params = [...values, req.params.id];
         const info = db.prepare(`UPDATE maintenance SET ${updateFields} WHERE id = ?`).run(...params);
         if (info.changes === 0) return res.status(404).json({ error: 'Non trovata' });
         const maintenance = db.prepare('SELECT * FROM maintenance WHERE id = ?').get(req.params.id);

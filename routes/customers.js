@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { db } = require('../database/db');
+const { buildSafeUpdate } = require('../utils/safe-update');
+
+const CUSTOMER_UPDATE_FIELDS = ['nome','cognome','codice_fiscale','partita_iva','telefono','email','indirizzo','data_nascita','luogo_nascita','doc_tipo','doc_categoria','doc_numero','doc_rilasciato_da','doc_rilasciato_il','doc_scadenza','patente_categoria','patente_numero','patente_rilasciata_da','patente_rilasciata_il','patente_scadenza','note'];
+const CUSTOMER_DEADLINE_UPDATE_FIELDS = ['tipo','descrizione','data_scadenza','importo','completata','note'];
 
 // Helper parameters
 function getBindArray(obj) {
@@ -85,11 +89,11 @@ router.post('/', (req, res) => {
 // PUT /:id - aggiorna cliente
 router.put('/:id', (req, res) => {
     try {
-        const updateFields = Object.keys(req.body).map(key => `${key} = ?`).join(', ');
-        if (!updateFields) return res.status(400).json({ error: 'Nessun campo da aggiornare' });
+        const { clause: updateFields, values } = buildSafeUpdate(req.body, CUSTOMER_UPDATE_FIELDS);
+        if (!updateFields) return res.status(400).json({ error: 'Nessun campo valido da aggiornare' });
 
         const query = `UPDATE customers SET ${updateFields} WHERE id = ?`;
-        const params = [...Object.values(req.body), req.params.id];
+        const params = [...values, req.params.id];
         
         const info = db.prepare(query).run(...params);
         if (info.changes === 0) return res.status(404).json({ error: 'Cliente non trovato' });
@@ -169,9 +173,9 @@ router.post('/:id/scadenze', (req, res) => {
 // PUT /:id/scadenze/:sid - aggiorna / segna completata
 router.put('/:id/scadenze/:sid', (req, res) => {
     try {
-        const updateFields = Object.keys(req.body).map(key => `${key} = ?`).join(', ');
-        if (!updateFields) return res.status(400).json({ error: 'Nessun campo da aggiornare' });
-        const info = db.prepare(`UPDATE customer_scadenze SET ${updateFields} WHERE id = ?`).run(...Object.values(req.body), req.params.sid);
+        const { clause: updateFields, values } = buildSafeUpdate(req.body, CUSTOMER_DEADLINE_UPDATE_FIELDS);
+        if (!updateFields) return res.status(400).json({ error: 'Nessun campo valido da aggiornare' });
+        const info = db.prepare(`UPDATE customer_scadenze SET ${updateFields} WHERE id = ? AND customer_id = ?`).run(...values, req.params.sid, req.params.id);
         if (info.changes === 0) return res.status(404).json({ error: 'Scadenza non trovata' });
         res.json({ message: 'Scadenza aggiornata' });
     } catch (err) {

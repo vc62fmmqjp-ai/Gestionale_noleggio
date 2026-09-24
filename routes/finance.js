@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { db } = require('../database/db');
+const { buildSafeUpdate } = require('../utils/safe-update');
+
+const PAYMENT_UPDATE_FIELDS = ['contract_id','vehicle_id','data_pagamento','importo','metodo','note'];
+const EXPENSE_UPDATE_FIELDS = ['vehicle_id','data_spesa','tipo','descrizione','importo','officina','note'];
 
 // GET /summary
 router.get('/summary', (req, res) => {
@@ -143,10 +147,10 @@ router.post('/payments', (req, res) => {
 // PUT /payments/:id
 router.put('/payments/:id', (req, res) => {
     try {
-        const updateFields = Object.keys(req.body).map(key => `${key} = ?`).join(', ');
-        if (!updateFields) return res.status(400).json({ error: 'Nessun campo' });
+        const { clause: updateFields, values } = buildSafeUpdate(req.body, PAYMENT_UPDATE_FIELDS);
+        if (!updateFields) return res.status(400).json({ error: 'Nessun campo valido' });
         
-        const params = [...Object.values(req.body), req.params.id];
+        const params = [...values, req.params.id];
         const info = db.prepare(`UPDATE payments SET ${updateFields} WHERE id = ?`).run(...params);
         if (info.changes === 0) return res.status(404).json({ error: 'Non trovato' });
         res.json({ message: 'Pagamento aggiornato' });
@@ -221,10 +225,10 @@ router.post('/expenses', (req, res) => {
 // PUT /expenses/:id
 router.put('/expenses/:id', (req, res) => {
     try {
-        const updateFields = Object.keys(req.body).map(key => `${key} = ?`).join(', ');
-        if (!updateFields) return res.status(400).json({ error: 'Nessun campo' });
+        const { clause: updateFields, values } = buildSafeUpdate(req.body, EXPENSE_UPDATE_FIELDS);
+        if (!updateFields) return res.status(400).json({ error: 'Nessun campo valido' });
         
-        const params = [...Object.values(req.body), req.params.id];
+        const params = [...values, req.params.id];
         const info = db.prepare(`UPDATE expenses SET ${updateFields} WHERE id = ?`).run(...params);
         if (info.changes === 0) return res.status(404).json({ error: 'Non trovata' });
         res.json({ message: 'Spesa aggiornata' });

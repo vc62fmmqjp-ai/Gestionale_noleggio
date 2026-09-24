@@ -1,5 +1,4 @@
 const express = require('express');
-const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const { initDatabase } = require('./database/db');
@@ -9,7 +8,6 @@ const app = express();
 const PORT = 3000;
 
 // Middleware
-app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 // Il frontend viene sempre ricaricato: evita che smartphone o Safari mostrino

@@ -10,6 +10,11 @@ if (!fs.existsSync(dbDir)) {
 const dbPath = path.join(dbDir, 'gestionale.db');
 const db = new Database(dbPath);
 
+// Configurazione SQLite per uso multi-client e maggiore integrita' dei dati.
+db.pragma('journal_mode = WAL');
+db.pragma('foreign_keys = ON');
+db.pragma('busy_timeout = 5000');
+
 function initDatabase() {
     // Settings
     db.exec(`CREATE TABLE IF NOT EXISTS settings (
